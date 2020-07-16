@@ -1,11 +1,15 @@
 from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 import csv
 import time
 
-browser = webdriver.Chrome("put your chromedriver path in here")  # load chromedriver
+global browser
+browser = webdriver.Chrome("C:\chromedriver\chromedriver.exe")  # load chromedriver
 
 browser.get("https://www.linkedin.com/uas/login")  # jump to the login page
-file = open("config.txt")  # create a txtx file and put yours linkedin username and password in it
+file = open("C:\password\config.txt")  # linkedin username and password in local path
 lines = file.readlines()
 username = lines[0]
 password = lines[1]
@@ -16,7 +20,6 @@ elementID.send_keys(username)
 elementID = browser.find_element_by_id("password")
 elementID.send_keys(password)
 elementID.submit()
-time.sleep(1)
 file.close()
 
 base_link = "https://www.linkedin.com/search/results/people/?facetGeoRegion=%5B%22us%3A0%22%5D&facetIndustry=%5B%2257" \
@@ -26,41 +29,48 @@ base_link = "https://www.linkedin.com/search/results/people/?facetGeoRegion=%5B%
 # jump to the linkedin search "people " page, with default filter "Oil & energy" "United States"
 
 
-def get_info_all():
-    global browser
-    file_info = open('client_info.csv', 'w')  # creat a csv file_info
-    info_writer = csv.writer(file_info)
-    info_writer.writerow(["Name", "Title and Company", "E-mail", "Linkedin url"])  # write the rows
+def get_client_name():
+    client_name = []
+    for name in browser.find_elements_by_xpath("//span[@class = 'name actor-name']"):  # find the name
+        client_name.append(name.text)
+    return client_name
 
-    for i in range(1, 11):
-        browser.get(base_link + f'{i}')  # iterate the page from 1 to 10
+
+def get_title_company_name():
+    title_company_name = []
+    for title in browser.find_elements_by_xpath(
+            ".//p[@class = 'subline-level-1 t-14 t-black t-normal search-result__truncate']"):
+        title_company_name.append(title.text)
+    return title_company_name
+
+
+def get_email_url():
+    get_url = []
+    get_email_address = []
+    for name in browser.find_elements_by_xpath("//span[@class = 'name actor-name']"):  # find the name
+        name.click()
+        get_linked_url = browser.current_url   # get the client current profile url
+        get_url.append(get_linked_url)
         browser.implicitly_wait(10)
-        for name in browser.find_elements_by_xpath("//span[@class = 'name actor-name']"):  # find the name
-            client_name = name.text
-            name.click()
+        browser.find_element_by_link_text("Contact info").click()  # click the "Contact Info" to get a submenu
+        try:
             browser.implicitly_wait(10)
-            get_title_company_name = browser.find_element_by_xpath(
-                ".//p[@class = 'subline-level-1 t-14 t-black t-normal search-result__truncate']").text  # get the title and company name
-            browser.find_element_by_link_text("Contact info").click()  # click the "Contact Info" to get a submenu
-            browser.implicitly_wait(10)
+            get_email = browser.find_element_by_class_name(
+                "pv-contact-info__contact-type ci-email").find_element_by_tag_name(
+                'a').text  # get the email address
+            get_email_address.append(get_email)
+        except Exception:
+            pass
 
-            try:  # if there is a email address, get it
-                get_linked_url = browser.find_element_by_class_name(
-                    "pv-contact-info__contact-type ci-vanity-url").find_element_by_tag_name('a').text  #get the linkedin url
-                print("find the url")
-                get_email = browser.find_element_by_class_name(
-                    "pv-contact-info__contact-type ci-email").find_element_by_tag_name('a').text # get the email address
-            except Exception:
-                get_email = "n/a"
-                get_linked_url = "n/a"
-            browser.implicitly_wait(10)
-            info_writer.writerow([client_name, get_title_company_name, get_email,
-                                  get_linked_url])  # write the info to csv file_info
-
-            browser.get(base_link + f'{i}')   # back to the previous page to continue the iteration
-            tbrowser.implicitly_wait(10)
-    file_info.close()
+    return list(zip(get_url, get_email_address))
 
 
-get_info_all()  # call the function
+for i in range(1, 11):
+    browser.get(base_link + f'{i}')
+    n = get_client_name()
+    t = get_title_company_name()
+    e = get_email_url()
+    time.sleep(2)
+print(n, t, e)
 
+w
